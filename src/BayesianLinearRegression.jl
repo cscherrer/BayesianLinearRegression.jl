@@ -114,11 +114,15 @@ end
 
 function predict(fit, x)
   design = x
+  (n,p) = size(x)
   x = fit.standardize(x)
   yhat = x * fit.mapWeights + fit.bias
 
   # σ2 should be the variance of the parameter estimate, and will be computed using the Hessian.
-  σ2 = x' * (fit.hessian \ x)
+  σ2 = zeros(n)
+  for i= 1:n
+    σ2[i] = (x[i,:] * (fit.hessian \ x[i,:]'))[1]
+  end
   Prediction(fit, design, yhat, σ2, inv(fit.noisePrecision))
 end
 
