@@ -1,1 +1,1 @@
-# BayesianLinearRegression.jl
+# BayesianLinearRegression
