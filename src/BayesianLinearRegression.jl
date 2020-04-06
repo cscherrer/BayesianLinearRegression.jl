@@ -145,11 +145,18 @@ end
 
 posteriorVariance(m::BayesianLinearRegression) = inv(cholesky(posteriorPrecision(m)))
 
+# function posteriorWeights(m)
+#     p = size(m.X,2)
+#     postVar = posteriorVariance(m)
+#     L = cholesky(postVar).L
+#     return m.weights + L * (zeros(p) .± 1)
+# end
+
 function posteriorWeights(m)
     p = size(m.X,2)
-    postVar = posteriorVariance(m)
-    L = cholesky(postVar).L
-    return m.weights + L * (zeros(p) .± 1)
+    ϕ = posteriorPrecision(m)
+    U = cholesky!(ϕ).U
+    return m.weights + inv(U) * (zeros(p) .± 1)
 end
 
 function predict(m::BayesianLinearRegression, X)
