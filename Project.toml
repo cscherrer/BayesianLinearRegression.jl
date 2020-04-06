@@ -3,6 +3,12 @@ uuid = "5047281b-d44e-44a3-ad3e-58447b69b7ca"
 authors = ["Chad Scherrer"]
 version = "0.1.0"
 
+[deps]
+ApproxFun = "28f2ccd6-bb30-5033-b560-165f7b14dc2f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
 [compat]
 julia = "1.3"
 
