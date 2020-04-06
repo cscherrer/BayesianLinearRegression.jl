@@ -1,3 +1,4 @@
+export stopAtIteration
 
 function stopAtIteration(n)
     function(m)
@@ -6,6 +7,8 @@ function stopAtIteration(n)
         end
     end
 end
+
+export stopAfter
 
 function stopAfter(Δt)
     stopTime = time() + Δt

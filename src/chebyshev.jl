@@ -1,3 +1,4 @@
+export chebyshev
 
 function chebyshev(x)
     (lo, hi) = extrema(x)

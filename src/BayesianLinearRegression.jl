@@ -8,7 +8,9 @@ using Measurements
 include("callbacks.jl")
 include("chebyshev.jl")
 
-mutable struct BayesianLinearRegression{T}
+export BayesianLinReg
+
+mutable struct BayesianLinReg{T}
     X :: Matrix{T}
     y :: Vector{T}
     XtX :: Matrix{T}
@@ -30,7 +32,7 @@ end
 
 
 
-function BayesianLinearRegression(
+function BayesianLinReg(
           X::Matrix{T}
         , y::Vector{T}
         ; updatePrior=true
@@ -50,7 +52,7 @@ function BayesianLinearRegression(
     hessian = α * I + β .* XtX
     weights = β .* (hessian \ Xty)
 
-    BayesianLinearRegression{T}(
+    BayesianLinReg{T}(
           X 
         , y 
         , XtX 
@@ -69,7 +71,7 @@ end
 
 const normSquared = LinearAlgebra.norm_sqr
 
-function Base.iterate(m::BayesianLinearRegression{T}, iteration=1) where{T}
+function Base.iterate(m::BayesianLinReg{T}, iteration=1) where{T}
     m.done && return nothing
 
     (n, p) = size(m.X)
@@ -94,8 +96,9 @@ function Base.iterate(m::BayesianLinearRegression{T}, iteration=1) where{T}
     return (m, iteration + 1)
 end
 
+export fit!
 
-function fit!(m::BayesianLinearRegression; kwargs...)
+function fit!(m::BayesianLinReg; kwargs...)
     m.done = false
     callback = get(kwargs, :callback, stopAfter(2))
 
@@ -114,8 +117,9 @@ function fit!(m::BayesianLinearRegression; kwargs...)
     return m        
 end
 
+export logEvidence
 
-function logEvidence(m::BayesianLinearRegression{T}) where {T}
+function logEvidence(m::BayesianLinReg{T}) where {T}
     (n,p) = size(m.X)
     α = m.priorPrecision
     β = m.noisePrecision
@@ -129,21 +133,26 @@ function logEvidence(m::BayesianLinearRegression{T}) where {T}
     return logEv
 end
 
-function effectiveNumParameters(m::BayesianLinearRegression)
+export effectiveNumParameters
+
+function effectiveNumParameters(m::BayesianLinReg)
     α = m.priorPrecision 
     β = m.noisePrecision
     α_over_β = α/β
     return sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
 end
 
+export posteriorPrecision
 
-function posteriorPrecision(m::BayesianLinearRegression)
+function posteriorPrecision(m::BayesianLinReg)
     α = m.priorPrecision
     β = m.noisePrecision
     return α*I + β .* m.XtX
 end
 
-posteriorVariance(m::BayesianLinearRegression) = inv(cholesky(posteriorPrecision(m)))
+export posteriorVariance
+
+posteriorVariance(m::BayesianLinReg) = inv(cholesky(posteriorPrecision(m)))
 
 # function posteriorWeights(m)
 #     p = size(m.X,2)
@@ -152,6 +161,8 @@ posteriorVariance(m::BayesianLinearRegression) = inv(cholesky(posteriorPrecision
 #     return m.weights + L * (zeros(p) .± 1)
 # end
 
+export posteriorWeights
+
 function posteriorWeights(m)
     p = size(m.X,2)
     ϕ = posteriorPrecision(m)
@@ -159,21 +170,35 @@ function posteriorWeights(m)
     return m.weights + inv(U) * (zeros(p) .± 1)
 end
 
-function predict(m::BayesianLinearRegression, X)
+export predict
+
+function predict(m::BayesianLinReg, X)
     w = posteriorWeights(m)
     σ = 0 ± sqrt(1/m.noisePrecision)
     return X * w .+ σ
 end
 
 
-priorPrecision(m::BayesianLinearRegression) = m.priorPrecision
-priorVariance(m::BayesianLinearRegression) = 1/m.priorPrecision
-priorScale(m::BayesianLinearRegression) = sqrt(priorVariance(m))
+
+export priorPrecision
+priorPrecision(m::BayesianLinReg) = m.priorPrecision
+
+export priorVariance
+priorVariance(m::BayesianLinReg) = 1/m.priorPrecision
+
+export priorScale
+priorScale(m::BayesianLinReg) = sqrt(priorVariance(m))
 
 
-noisePrecision(m::BayesianLinearRegression) = m.noisePrecision
-noiseVariance(m::BayesianLinearRegression) = 1/m.noisePrecision
-noiseScale(m::BayesianLinearRegression) = sqrt(noiseVariance(m))
+
+export noisePrecision
+noisePrecision(m::BayesianLinReg) = m.noisePrecision
+
+export noiseVariance
+noiseVariance(m::BayesianLinReg) = 1/m.noisePrecision
+
+export noiseScale
+noiseScale(m::BayesianLinReg) = sqrt(noiseVariance(m))
 
 
 end # module
