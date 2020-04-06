@@ -174,11 +174,16 @@ export predict
 
 function predict(m::BayesianLinReg, X)
     w = posteriorWeights(m)
-    σ = 0 ± sqrt(1/m.noisePrecision)
-    return X * w .+ σ
+    return X * w
 end
 
+export predictWithNoise
 
+function predictWithNoise(m::BayesianLinReg, X)
+    yhat = predict(m,X)
+    σ = 0 ± noiseScale(m)
+    return yhat .+ σ
+end
 
 export priorPrecision
 priorPrecision(m::BayesianLinReg) = m.priorPrecision
