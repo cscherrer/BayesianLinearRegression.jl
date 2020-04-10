@@ -28,6 +28,8 @@ mutable struct BayesianLinReg{T}
 
     iterationCount :: Int
     done :: Bool
+
+    uncertaintyBasis :: Vector{Measurement{Float64}}
 end
 
 
@@ -66,6 +68,7 @@ function BayesianLinReg(
         , hessian 
         , 0
         , false 
+        , zeros(p) .± 1.0
     )
 end
 
@@ -154,36 +157,35 @@ export posteriorVariance
 
 posteriorVariance(m::BayesianLinReg) = inv(cholesky(posteriorPrecision(m)))
 
-# function posteriorWeights(m)
-#     p = size(m.X,2)
-#     postVar = posteriorVariance(m)
-#     L = cholesky(postVar).L
-#     return m.weights + L * (zeros(p) .± 1)
-# end
-
 export posteriorWeights
 
 function posteriorWeights(m)
     p = size(m.X,2)
     ϕ = posteriorPrecision(m)
     U = cholesky!(ϕ).U
-    return m.weights + inv(U) * (zeros(p) .± 1)
+    return m.weights + inv(U) * m.uncertaintyBasis
 end
 
 export predict
 
-function predict(m::BayesianLinReg, X)
-    w = posteriorWeights(m)
-    return X * w
+function predict(m::BayesianLinReg, X; uncertainty=true, noise=true)
+    # dispatch to avoid type instability
+    return _predict(m, X, Val(uncertainty), Val(noise))
 end
 
-export predictWithNoise
-
-function predictWithNoise(m::BayesianLinReg, X)
-    yhat = predict(m,X)
-    σ = 0 ± noiseScale(m)
-    return yhat .+ σ
+function _predict(m, X, ::Val{true}, ::Val{true})
+    yhat = _predict(m, X, Val(true), Val(false))
+    n = length(yhat)
+    noise = zeros(n) .± noiseScale(m)
+    yhat .+= noise
+    return yhat
 end
+
+_predict(m, X, ::Val{true}, ::Val{false}) = X * posteriorWeights(m)
+
+_predict(m, X, ::Val{false}, ::Val{true}) = @error "Noise requires uncertainty"
+
+_predict(m, X, ::Val{false}, ::Val{false}) = X * m.weights
 
 export priorPrecision
 priorPrecision(m::BayesianLinReg) = m.priorPrecision
