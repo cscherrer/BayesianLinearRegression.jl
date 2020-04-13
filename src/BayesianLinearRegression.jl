@@ -103,7 +103,7 @@ export fit!
 
 function fit!(m::BayesianLinReg; kwargs...)
     m.done = false
-    callback = get(kwargs, :callback, stopAfter(2))
+    callback = get(kwargs, :callback, stopAtIteration(10))
 
     try
         for iter in m
