@@ -2,11 +2,9 @@ module BayesianLinearRegression
 
 using Statistics
 using LinearAlgebra
-using ApproxFun
 using Measurements
 
 include("callbacks.jl")
-include("chebyshev.jl")
 
 export BayesianLinReg
 
