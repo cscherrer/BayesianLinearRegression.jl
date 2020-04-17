@@ -81,15 +81,19 @@ function Base.iterate(m::BayesianLinReg{T}, iteration=1) where{T}
     α = m.priorPrecision
     β = m.noisePrecision
 
-    α_over_β = α / β
-    gamma = sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
+    
+
+    gamma() = let
+        α_over_β = m.priorPrecision / m.noisePrecision
+        sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
+    end
 
     if m.updatePrior
-        m.priorPrecision = gamma / dot(m.weights, m.weights)
+        m.priorPrecision = gamma() / dot(m.weights, m.weights)
     end
 
     if m.updateNoise
-        m.noisePrecision = (n - gamma) / normSquared(m.y - m.X * m.weights)
+        m.noisePrecision = (n - gamma()) / normSquared(m.y - m.X * m.weights)
     end
 
     m.hessian .= α * I + β .* m.XtX;
@@ -103,7 +107,7 @@ export fit!
 
 function fit!(m::BayesianLinReg; kwargs...)
     m.done = false
-    callback = get(kwargs, :callback, stopAtIteration(10))
+    callback = get(kwargs, :callback, fixedEvidence())
 
     try
         for iter in m
@@ -126,11 +130,15 @@ function logEvidence(m::BayesianLinReg{T}) where {T}
     (n,p) = size(m.X)
     α = m.priorPrecision
     β = m.noisePrecision
+    return _logEv(n, p, α, β, m.X, m.y, m.hessian, m.weights) 
+end
+
+function _logEv(n, p, α, β, X, y, H, w) 
     logEv = 0.5 * 
         ( p * log(α) 
         + n * log(β)
-        - (β * normSquared(m.y - m.X * m.weights) + α * normSquared(m.weights))
-        - logdet(m.hessian)
+        - (β * normSquared(y - X * w) + α * normSquared(w))
+        - logdet(H)
         - n * log(2π)
         )
     return logEv
