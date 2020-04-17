@@ -18,3 +18,18 @@ function stopAfter(Δt)
         end
     end
 end
+
+export fixedEvidence
+
+function fixedEvidence()
+    logEv0 = -Inf
+    function(m)
+        logEv = logEvidence(m)
+        
+        if logEv == logEv0 
+            m.done = true
+        end
+        logEv0 = logEv
+        return logEv
+    end
+end
