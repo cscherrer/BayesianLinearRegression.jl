@@ -10,66 +10,44 @@ The result of fitting such a model is a form that yields a posterior predictive 
 
 
 ## Background 
+This package fits the linear regression model 
 
-This package fits the linear regression model
+![image](https://user-images.githubusercontent.com/1184449/79926227-34896d00-83f1-11ea-826f-b461530ffbd6.png)
 
-![\\begin{aligned}P(\\boldsymbol{w}\|\\alpha) & =\\text{Normal}(\\boldsymbol{w}\|0,\\alpha\^{-1}\\boldsymbol{I})\\\\
-P(\\boldsymbol{y}\|\\boldsymbol{w},\\beta) & =\\text{Normal}(\\boldsymbol{y}\|\\boldsymbol{Xw},\\beta\^{-1}\\boldsymbol{I})\\ .
-\\end{aligned}](https://latex.codecogs.com/png.latex?%5Cbegin%7Baligned%7DP%28%5Cboldsymbol%7Bw%7D%7C%5Calpha%29%20%26%20%3D%5Ctext%7BNormal%7D%28%5Cboldsymbol%7Bw%7D%7C0%2C%5Calpha%5E%7B-1%7D%5Cboldsymbol%7BI%7D%29%5C%5C%0AP%28%5Cboldsymbol%7By%7D%7C%5Cboldsymbol%7Bw%7D%2C%5Cbeta%29%20%26%20%3D%5Ctext%7BNormal%7D%28%5Cboldsymbol%7By%7D%7C%5Cboldsymbol%7BXw%7D%2C%5Cbeta%5E%7B-1%7D%5Cboldsymbol%7BI%7D%29%5C%20.%0A%5Cend%7Baligned%7D "\begin{aligned}P(\boldsymbol{w}|\alpha) & =\text{Normal}(\boldsymbol{w}|0,\alpha^{-1}\boldsymbol{I})\\
-P(\boldsymbol{y}|\boldsymbol{w},\beta) & =\text{Normal}(\boldsymbol{y}|\boldsymbol{Xw},\beta^{-1}\boldsymbol{I})\ .
-\end{aligned}")
 
-Rather than finding "the" value for
-![\\boldsymbol{\\hat{w}}](https://latex.codecogs.com/png.latex?%5Cboldsymbol%7B%5Chat%7Bw%7D%7D "\boldsymbol{\hat{w}}"),
-we take a Bayesian approach and find the posterior distribution, given
-by
+Rather than finding “the” value for w, we take a Bayesian approach and find the posterior distribution, given by 
 
-![P(\\boldsymbol{w}\|\\boldsymbol{y})=\\text{Normal}(\\boldsymbol{w}\|\\boldsymbol{\\mu},\\boldsymbol{H})\\ ,](https://latex.codecogs.com/png.latex?P%28%5Cboldsymbol%7Bw%7D%7C%5Cboldsymbol%7By%7D%29%3D%5Ctext%7BNormal%7D%28%5Cboldsymbol%7Bw%7D%7C%5Cboldsymbol%7B%5Cmu%7D%2C%5Cboldsymbol%7BH%7D%29%5C%20%2C "P(\boldsymbol{w}|\boldsymbol{y})=\text{Normal}(\boldsymbol{w}|\boldsymbol{\mu},\boldsymbol{H})\ ,")
+![image](https://user-images.githubusercontent.com/1184449/79926304-613d8480-83f1-11ea-9f33-644cea477a29.png)
 
-where
+where 
 
-![\\begin{aligned}\\boldsymbol{\\mu} & =\\beta\\boldsymbol{H}\^{-1}\\boldsymbol{X}\^{T}\\boldsymbol{y}\\\\
-\\boldsymbol{H} & =\\alpha\\boldsymbol{I}+\\beta\\boldsymbol{X}\^{T}\\boldsymbol{X}\\ .
-\\end{aligned}](https://latex.codecogs.com/png.latex?%5Cbegin%7Baligned%7D%5Cboldsymbol%7B%5Cmu%7D%20%26%20%3D%5Cbeta%5Cboldsymbol%7BH%7D%5E%7B-1%7D%5Cboldsymbol%7BX%7D%5E%7BT%7D%5Cboldsymbol%7By%7D%5C%5C%0A%5Cboldsymbol%7BH%7D%20%26%20%3D%5Calpha%5Cboldsymbol%7BI%7D%2B%5Cbeta%5Cboldsymbol%7BX%7D%5E%7BT%7D%5Cboldsymbol%7BX%7D%5C%20.%0A%5Cend%7Baligned%7D "\begin{aligned}\boldsymbol{\mu} & =\beta\boldsymbol{H}^{-1}\boldsymbol{X}^{T}\boldsymbol{y}\\
-\boldsymbol{H} & =\alpha\boldsymbol{I}+\beta\boldsymbol{X}^{T}\boldsymbol{X}\ .
-\end{aligned}")
+![image](https://user-images.githubusercontent.com/1184449/79926327-76b2ae80-83f1-11ea-81a2-b66f7b3c6863.png)
 
-All of the above depends on fixed values for
-![\\alpha](https://latex.codecogs.com/png.latex?%5Calpha "\alpha") and
-**![\\beta](https://latex.codecogs.com/png.latex?%5Cbeta "\beta")**
-being specified in adviance. Alternatively, a "full Bayesian" approach
-would specify prior distributions over these, and work in terms of their
-posterior distribution for the final result.
 
-*Marginal likelihood* finds a middle ground between these two
-approaches, and determines values for the
-![\\alpha](https://latex.codecogs.com/png.latex?%5Calpha "\alpha") and
-![\\beta](https://latex.codecogs.com/png.latex?%5Cbeta "\beta")
-hyperparameters by maximizing
 
-![P(\\boldsymbol{y}\|\\alpha,\\beta)=\\int P(\\boldsymbol{y}\|\\boldsymbol{w},\\alpha,\\beta)\\,d\\boldsymbol{w}\\ .](https://latex.codecogs.com/png.latex?P%28%5Cboldsymbol%7By%7D%7C%5Calpha%2C%5Cbeta%29%3D%5Cint%20P%28%5Cboldsymbol%7By%7D%7C%5Cboldsymbol%7Bw%7D%2C%5Calpha%2C%5Cbeta%29%5C%2Cd%5Cboldsymbol%7Bw%7D%5C%20. "P(\boldsymbol{y}|\alpha,\beta)=\int P(\boldsymbol{y}|\boldsymbol{w},\alpha,\beta)\,d\boldsymbol{w}\ .")
+All of the above depends on fixed values for α and β being specified in adviance. Alternatively, a “full Bayesian” approach would specify prior distributions over these, and work in terms of their posterior distribution for the final result.
 
-This reduces to
+Marginal likelihood finds a middle ground between these two approaches, and determines values for the \alpha and \beta hyperparameters by maximizing 
 
-![P(\\boldsymbol{y}\|\\alpha,\\beta)=\\frac{1}{2}\\left\[n\\log\\alpha+p\\log\\beta-\\beta\\left\\Vert \\boldsymbol{y}-\\boldsymbol{X\\mu}\\right\\Vert \^{2}-\\alpha\\left\\Vert \\boldsymbol{\\mu}\\right\\Vert \^{2}-\\log\\left\|\\boldsymbol{H}\\right\|-n\\log2\\pi\\right\]\\ .](https://latex.codecogs.com/png.latex?P%28%5Cboldsymbol%7By%7D%7C%5Calpha%2C%5Cbeta%29%3D%5Cfrac%7B1%7D%7B2%7D%5Cleft%5Bn%5Clog%5Calpha%2Bp%5Clog%5Cbeta-%5Cbeta%5Cleft%5CVert%20%5Cboldsymbol%7By%7D-%5Cboldsymbol%7BX%5Cmu%7D%5Cright%5CVert%20%5E%7B2%7D-%5Calpha%5Cleft%5CVert%20%5Cboldsymbol%7B%5Cmu%7D%5Cright%5CVert%20%5E%7B2%7D-%5Clog%5Cleft%7C%5Cboldsymbol%7BH%7D%5Cright%7C-n%5Clog2%5Cpi%5Cright%5D%5C%20. "P(\boldsymbol{y}|\alpha,\beta)=\frac{1}{2}\left[n\log\alpha+p\log\beta-\beta\left\Vert \boldsymbol{y}-\boldsymbol{X\mu}\right\Vert ^{2}-\alpha\left\Vert \boldsymbol{\mu}\right\Vert ^{2}-\log\left|\boldsymbol{H}\right|-n\log2\pi\right]\ .")
+![image](https://user-images.githubusercontent.com/1184449/79926398-acf02e00-83f1-11ea-9c3d-15c59fb33589.png)
 
-This package maximizes the marginal likelihood using the approach
-described in Bishop (2006), which alternates between
+This reduces to 
 
-1.  Update
-    ![\\alpha](https://latex.codecogs.com/png.latex?%5Calpha "\alpha")
-    and ![\\beta](https://latex.codecogs.com/png.latex?%5Cbeta "\beta")
+![image](https://user-images.githubusercontent.com/1184449/79926422-bed1d100-83f1-11ea-9e8f-02be03d8ed7a.png)
 
-2.  Update
-    ![\\boldsymbol{\\mu}](https://latex.codecogs.com/png.latex?%5Cboldsymbol%7B%5Cmu%7D "\boldsymbol{\mu}")
-    and
-    ![\\boldsymbol{H}](https://latex.codecogs.com/png.latex?%5Cboldsymbol%7BH%7D "\boldsymbol{H}").
+
+This package maximizes the marginal likelihood using the approach described in Bishop (2006), which cycles through
+
+
+1. Update α and β
+
+2. Update H
+
+3. Update μ
 
 For details, see
 
-Bishop, C. M. (2006). Pattern Recognition and Machine Learning (M.
-Jordan, J. Kleinberg, & B. Scholkopf (eds.); Vol. 53, Issue 9).
-Springer. https://doi.org/10.1117/1.2819119
+Bishop, C. M. (2006). Pattern Recognition and Machine Learning (M. Jordan, J. Kleinberg, & B. Schölkopf (eds.); Vol. 53, Issue 9). Springer. https://doi.org/10.1117/1.2819119
 
 ## Example 
 
