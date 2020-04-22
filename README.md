@@ -1,6 +1,6 @@
 # BayesianLinearRegression
 
-[![Build Status](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl.svg?branch=master)](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl | height=100)
+[![Build Status](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl.svg?branch=master)](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl)
 [![Codecov](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl)
 This library implements Bayesian Linear Regression, as described in Chris Bishop's [Pattern Recognition and Machine Learning](http://research.microsoft.com/en-us/um/people/cmbishop/prml/).
 
