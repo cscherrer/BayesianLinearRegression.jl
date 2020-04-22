@@ -1,6 +1,6 @@
 # BayesianLinearRegression
 
-[![Build Status](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl.svg?branch=master)](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl)
+[![Build Status](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl.svg?branch=master)](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl | height=100)
 [![Codecov](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl)
 This library implements Bayesian Linear Regression, as described in Chris Bishop's [Pattern Recognition and Machine Learning](http://research.microsoft.com/en-us/um/people/cmbishop/prml/).
 
@@ -12,16 +12,16 @@ The result of fitting such a model is a form that yields a posterior predictive 
 ## Background 
 This package fits the linear regression model 
 
-![image](https://user-images.githubusercontent.com/1184449/79926227-34896d00-83f1-11ea-826f-b461530ffbd6.png)
+<img src="https://user-images.githubusercontent.com/1184449/79926227-34896d00-83f1-11ea-826f-b461530ffbd6.png" height="100">
 
 
 Rather than finding “the” value for w, we take a Bayesian approach and find the posterior distribution, given by 
 
-![image](https://user-images.githubusercontent.com/1184449/79926304-613d8480-83f1-11ea-9f33-644cea477a29.png)
+<img src="https://user-images.githubusercontent.com/1184449/79926304-613d8480-83f1-11ea-9f33-644cea477a29.png" height="40">
 
 where 
 
-![image](https://user-images.githubusercontent.com/1184449/79926327-76b2ae80-83f1-11ea-81a2-b66f7b3c6863.png)
+<img src="https://user-images.githubusercontent.com/1184449/79926327-76b2ae80-83f1-11ea-81a2-b66f7b3c6863.png" height="100">
 
 
 
@@ -29,11 +29,11 @@ All of the above depends on fixed values for α and β being specified in advian
 
 Marginal likelihood finds a middle ground between these two approaches, and determines values for the \alpha and \beta hyperparameters by maximizing 
 
-![image](https://user-images.githubusercontent.com/1184449/79926398-acf02e00-83f1-11ea-9c3d-15c59fb33589.png)
+<img src="https://user-images.githubusercontent.com/1184449/79926398-acf02e00-83f1-11ea-9c3d-15c59fb33589.png" height="100">
 
 This reduces to 
 
-![image](https://user-images.githubusercontent.com/1184449/79926422-bed1d100-83f1-11ea-9e8f-02be03d8ed7a.png)
+<img src="https://user-images.githubusercontent.com/1184449/79926422-bed1d100-83f1-11ea-9e8f-02be03d8ed7a.png">
 
 
 This package maximizes the marginal likelihood using the approach described in Bishop (2006), which cycles through
