@@ -3,6 +3,7 @@ module BayesianLinearRegression
 using Statistics
 using LinearAlgebra
 using Measurements
+using DataStructures: IntSet
 
 include("callbacks.jl")
 
@@ -28,6 +29,8 @@ mutable struct BayesianLinReg{T}
     done :: Bool
 
     uncertaintyBasis :: Vector{Measurement{Float64}}
+
+    active :: Vector{Int}
 end
 
 
@@ -44,7 +47,8 @@ function BayesianLinReg(
     Xty = X' * y
     XtX = X' * X
 
-    XtXeigs = eigvals(XtX)
+    # We'll populate this later
+    XtXeigs = []
 
     α = 1.0
     β = 1.0
@@ -67,35 +71,40 @@ function BayesianLinReg(
         , 0
         , false 
         , zeros(p) .± 1.0
+        , [1:p;]
     )
 end
 
 const normSquared = LinearAlgebra.norm_sqr
 
-function Base.iterate(m::BayesianLinReg{T}, iteration=1) where{T}
+function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
     m.done && return nothing
 
-    (n, p) = size(m.X)
+    n = size(m.X,1)
+    ps = m.active
     α = m.priorPrecision
     β = m.noisePrecision
-
-    
 
     gamma() = let
         α_over_β = m.priorPrecision / m.noisePrecision
         sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
     end
 
+    X = view(m.X, :, ps)
+    XtX = view(m.XtX, ps, ps)
+    w = view(m.weights, ps)
+    H = view(m.hessian, ps, ps) 
+
     if m.updatePrior
-        m.priorPrecision = gamma() / dot(m.weights, m.weights)
+        m.priorPrecision = gamma() / dot(w,w)
     end
 
     if m.updateNoise
-        m.noisePrecision = (n - gamma()) / normSquared(m.y - m.X * m.weights)
+        m.noisePrecision = (n - gamma()) / normSquared(m.y - X * w)
     end
 
-    m.hessian .= α * I + β .* m.XtX;
-    m.weights .= β .* (m.hessian \ m.Xty);        
+    H .= α * I + β .* XtX;
+    w .= β .* (H \ m.Xty);        
     
     m.iterationCount += 1
     return (m, iteration + 1)
@@ -106,6 +115,11 @@ export fit!
 function fit!(m::BayesianLinReg; kwargs...)
     m.done = false
     callback = get(kwargs, :callback, fixedEvidence())
+
+    X = view(m.X,:,m.active)
+    XtX = view(m.XtX, m.active, m.active)
+    m.XtXeigs = eigvals(XtX)
+    m.Xty = X' * m.y
 
     try
         for iter in m
@@ -125,19 +139,26 @@ end
 export logEvidence
 
 function logEvidence(m::BayesianLinReg{T}) where {T}
-    (n,p) = size(m.X)
+    n = size(m.X, 1)
     α = m.priorPrecision
     β = m.noisePrecision
-    return _logEv(n, p, α, β, m.X, m.y, m.hessian, m.weights) 
+    return _logEv(n, m.active, α, β, m.X, m.y, m.hessian, m.weights) 
 end
 
-function _logEv(n, p, α, β, X, y, H, w) 
+const log2π = log(2π)
+
+function _logEv(n, active, α, β, X, y, H, w) 
+    p = length(active)
+    X = view(X, :, active)
+    H = view(H, active, active)
+    w = view(w, active)
+
     logEv = 0.5 * 
         ( p * log(α) 
         + n * log(β)
         - (β * normSquared(y - X * w) + α * normSquared(w))
         - logdet(H)
-        - n * log(2π)
+        - n * log2π
         )
     return logEv
 end
@@ -156,7 +177,8 @@ export posteriorPrecision
 function posteriorPrecision(m::BayesianLinReg)
     α = m.priorPrecision
     β = m.noisePrecision
-    return α*I + β .* m.XtX
+    XtX = view(m.XtX, m.active, m.active)
+    return α * I + β .* XtX
 end
 
 export posteriorVariance
@@ -166,10 +188,13 @@ posteriorVariance(m::BayesianLinReg) = inv(cholesky(posteriorPrecision(m)))
 export posteriorWeights
 
 function posteriorWeights(m)
-    p = size(m.X,2)
+    p = length(m.active)
     ϕ = posteriorPrecision(m)
     U = cholesky!(ϕ).U
-    return m.weights + inv(U) * m.uncertaintyBasis
+
+    w = view(m.weights, m.active)
+    ε = inv(U) * view(m.uncertaintyBasis, m.active)
+    return w + ε
 end
 
 export predict
