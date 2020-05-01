@@ -4,6 +4,7 @@ using Statistics
 using LinearAlgebra
 using Measurements
 using DataStructures: IntSet
+using Printf
 
 include("callbacks.jl")
 
@@ -238,5 +239,18 @@ noiseVariance(m::BayesianLinReg) = 1/m.noisePrecision
 export noiseScale
 noiseScale(m::BayesianLinReg) = sqrt(noiseVariance(m))
 
+function show(io::IO, m::BayesianLinReg)
+    @printf io "BayesianLinReg model\n"
+    @printf io "\n"
+    @printf io "Log evidence: %3.2f\n" logEvidence(m)
+    @printf io "Prior scale: %5.2f\n" priorScale(m)
+    @printf io "Noise scale: %5.2f\n" noiseScale(m)
+    @printf io "\n"
+    @printf io "Coefficients:\n"
+    weights = posteriorWeights(m)
+    for (j,w) in zip(m.active, weights)
+        @printf io "%3d: %5.2f ± %4.2f\n" j w.val w.err
+    end
+end
 
 end # module
