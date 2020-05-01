@@ -1,9 +1,8 @@
 module BayesianLinearRegression
 
-using Statistics
+# using Statistics
 using LinearAlgebra
 using Measurements
-using DataStructures: IntSet
 using Printf
 
 include("callbacks.jl")
@@ -115,7 +114,15 @@ export fit!
 
 function fit!(m::BayesianLinReg; kwargs...)
     m.done = false
-    callback = get(kwargs, :callback, fixedEvidence())
+    callback = get(kwargs, :callback, stopAtIteration(10))
+
+    if m.updatePrior
+        m.priorPrecision = 1.0
+    end
+
+    if m.updateNoise
+        m.noisePrecision = 1.0
+    end
 
     X = view(m.X,:,m.active)
     XtX = view(m.XtX, m.active, m.active)
@@ -239,7 +246,7 @@ noiseVariance(m::BayesianLinReg) = 1/m.noisePrecision
 export noiseScale
 noiseScale(m::BayesianLinReg) = sqrt(noiseVariance(m))
 
-function show(io::IO, m::BayesianLinReg)
+function Base.show(io::IO, m::BayesianLinReg{T}) where {T}
     @printf io "BayesianLinReg model\n"
     @printf io "\n"
     @printf io "Log evidence: %3.2f\n" logEvidence(m)
