@@ -12,9 +12,11 @@ export BayesianLinReg
 mutable struct BayesianLinReg{T}
     X :: Matrix{T}
     y :: Vector{T}
-    XtX :: Matrix{T}
+
     Xty :: Vector{T}
-    XtXeigs :: Vector{T}
+    
+    Λ :: Vector{T}
+    Vt :: Matrix{T}
 
     priorPrecision :: T
     updatePrior :: Bool
@@ -23,7 +25,6 @@ mutable struct BayesianLinReg{T}
     updateNoise :: Bool
     
     weights :: Vector{T}
-    hessian :: Matrix{T}
 
     iterationCount :: Int
     done :: Bool
@@ -33,8 +34,56 @@ mutable struct BayesianLinReg{T}
     active :: Vector{Int}
 end
 
+export hessian
 
+function hessian(Λ, Vt, α, β)
+    V = Vt'
+    D = Diagonal(α .+ β .* Λ)
 
+    return V * D * Vt
+end
+
+function hessian(m::BayesianLinReg)
+    α = m.priorPrecision
+    β = m.noisePrecision
+    
+    return hessian(m.Λ, m.Vt, α, β)
+end
+
+function logdetH(m::BayesianLinReg)
+    Λ = m.Λ
+    α = m.priorPrecision
+    β = m.noisePrecision
+    return logdetH(α, β, Λ)
+end
+
+function logdetH(α, β, Λ)
+    sum(log, α .+ β .* Λ)
+end
+
+export hessianinv
+
+function hessianinv(m::BayesianLinReg)
+    Λ = m.Λ
+    Vt = m.Vt
+    V = Vt'
+
+    α = m.priorPrecision
+    β = m.noisePrecision
+
+    D = Diagonal(inv.(α .+ β .* Λ))
+
+    return V * D * Vt
+end
+
+function updateWeights!(m::BayesianLinReg)
+    β = m.noisePrecision
+    Hinv = hessianinv(m)
+
+    m.weights[m.active] .= β .* (Hinv * m.Xty)
+    return view(m.weights, m.active)
+end
+``
 function BayesianLinReg(
           X::Matrix{T}
         , y::Vector{T}
@@ -45,29 +94,31 @@ function BayesianLinReg(
     (n, p) = size(X)
     
     Xty = X' * y
-    XtX = X' * X
 
-    # We'll populate this later
-    XtXeigs = []
+    F = svd(X' * X)
+    Λ = F.S
+    Vt = F.Vt
+    V = Vt'
 
     α = 1.0
     β = 1.0
 
-    hessian = α * I + β .* XtX
-    weights = β .* (hessian \ Xty)
+    D = Diagonal(inv.(α .+ β .* Λ))
+    Hinv = V * D * Vt
+
+    weights = β .* (Hinv * Xty)
 
     BayesianLinReg{T}(
           X 
         , y 
-        , XtX 
         , Xty 
-        , XtXeigs 
+        , Λ
+        , Vt
         , α 
         , updatePrior
         , β
         , updateNoise
         , weights 
-        , hessian 
         , 0
         , false 
         , zeros(p) .± 1.0
@@ -85,26 +136,20 @@ function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
     α = m.priorPrecision
     β = m.noisePrecision
 
-    gamma() = let
-        α_over_β = m.priorPrecision / m.noisePrecision
-        sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
-    end
+    gamma(m) = effectiveNumParameters(m)
 
     X = view(m.X, :, ps)
-    XtX = view(m.XtX, ps, ps)
     w = view(m.weights, ps)
-    H = view(m.hessian, ps, ps) 
 
     if m.updatePrior
-        m.priorPrecision = gamma() / dot(w,w)
+        m.priorPrecision = gamma(m) / dot(w,w)
     end
 
     if m.updateNoise
-        m.noisePrecision = (n - gamma()) / normSquared(m.y - X * w)
+        m.noisePrecision = (n - gamma(m)) / normSquared(m.y - X * w)
     end
 
-    H .= α * I + β .* XtX;
-    w .= β .* (H \ m.Xty);        
+    updateWeights!(m)     
     
     m.iterationCount += 1
     return (m, iteration + 1)
@@ -125,9 +170,11 @@ function fit!(m::BayesianLinReg; kwargs...)
     end
 
     X = view(m.X,:,m.active)
-    XtX = view(m.XtX, m.active, m.active)
-    m.XtXeigs = eigvals(XtX)
     m.Xty = X' * m.y
+
+    F = svd(X' * X)
+    m.Λ = F.S
+    m.Vt = F.Vt
 
     try
         for iter in m
@@ -150,22 +197,23 @@ function logEvidence(m::BayesianLinReg{T}) where {T}
     n = size(m.X, 1)
     α = m.priorPrecision
     β = m.noisePrecision
-    return _logEv(n, m.active, α, β, m.X, m.y, m.hessian, m.weights) 
+    return _logEv(n, m.active, α, β, m.X, m.y, m.Λ, m.Vt, m.weights) 
 end
 
 const log2π = log(2π)
 
-function _logEv(n, active, α, β, X, y, H, w) 
+function _logEv(n, active, α, β, X, y, Λ, Vt, w) 
     p = length(active)
     X = view(X, :, active)
-    H = view(H, active, active)
+
+    H = hessian(Λ, Vt, α, β)
     w = view(w, active)
 
     logEv = 0.5 * 
         ( p * log(α) 
         + n * log(β)
         - (β * normSquared(y - X * w) + α * normSquared(w))
-        - logdet(H)
+        - logdetH(α, β, Λ)
         - n * log2π
         )
     return logEv
@@ -174,30 +222,29 @@ end
 export effectiveNumParameters
 
 function effectiveNumParameters(m::BayesianLinReg)
-    α = m.priorPrecision 
-    β = m.noisePrecision
-    α_over_β = α/β
-    return sum((λ / (α_over_β + λ) for λ in m.XtXeigs))
+    α_over_β = m.priorPrecision / m.noisePrecision
+    
+    Λ = m.Λ
+
+    return sum(λ -> λ / (α_over_β + λ), Λ)
 end
 
 export posteriorPrecision
 
 function posteriorPrecision(m::BayesianLinReg)
-    α = m.priorPrecision
-    β = m.noisePrecision
-    XtX = view(m.XtX, m.active, m.active)
-    return α * I + β .* XtX
+    return hessian(m)
 end
 
 export posteriorVariance
 
-posteriorVariance(m::BayesianLinReg) = inv(cholesky(posteriorPrecision(m)))
+posteriorVariance(m::BayesianLinReg) = hessianinv(m)
 
 export posteriorWeights
 
 function posteriorWeights(m)
     p = length(m.active)
     ϕ = posteriorPrecision(m)
+    ϕ = (ϕ + ϕ') ./ 2
     U = cholesky!(ϕ).U
 
     w = view(m.weights, m.active)
