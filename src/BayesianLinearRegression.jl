@@ -244,12 +244,29 @@ export posteriorWeights
 function posteriorWeights(m)
     p = length(m.active)
     ϕ = posteriorPrecision(m)
-    ϕ = (ϕ + ϕ') ./ 2
     U = cholesky!(ϕ).U
 
     w = view(m.weights, m.active)
     ε = inv(U) * view(m.uncertaintyBasis, m.active)
     return w + ε
+end
+
+export postWeights
+
+function postWeights(m)
+    α = m.priorPrecision
+    β = m.noisePrecision
+    Λ = m.Λ
+    Vt = m.Vt
+    V = Vt'
+
+    S = V * diagm(sqrt.(inv.(α .+ β .* Λ))) * Vt
+    
+    # w = view(m.weights, m.active)
+    # ε = S * view(m.uncertaintyBasis, m.active)
+
+    # return w + ε
+    return S
 end
 
 export predict
