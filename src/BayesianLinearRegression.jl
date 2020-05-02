@@ -34,13 +34,21 @@ mutable struct BayesianLinReg{T}
     active :: Vector{Int}
 end
 
+function symmetric!(S)
+    S .+= S'
+    S ./= 2
+end
+
 export hessian
 
 function hessian(Λ, Vt, α, β)
     V = Vt'
     D = Diagonal(α .+ β .* Λ)
 
-    return V * D * Vt
+    H = V * D * Vt
+    symmetric!(H)
+
+    return H
 end
 
 function hessian(m::BayesianLinReg)
@@ -72,8 +80,10 @@ function hessianinv(m::BayesianLinReg)
     β = m.noisePrecision
 
     D = Diagonal(inv.(α .+ β .* Λ))
-
-    return V * D * Vt
+    Hinv = V * D * Vt
+    
+    symmetric!(Hinv)
+    return Hinv
 end
 
 function updateWeights!(m::BayesianLinReg)
