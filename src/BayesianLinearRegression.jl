@@ -223,7 +223,6 @@ function _logEv(n, active, α, β, X, y, Λ, Vt, w)
     p = length(active)
     X = view(X, :, active)
 
-    H = hessian(Λ, Vt, α, β)
     w = view(w, active)
 
     logEv = 0.5 * 
