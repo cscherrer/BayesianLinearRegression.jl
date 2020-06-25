@@ -159,7 +159,7 @@ function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
     w = view(m.weights, ps)
 
     if m.updatePrior
-        m.priorPrecision = gamma(m) / dot(w,w)
+        m.priorPrecision = gamma(m) / normSquared(w)
     end
 
     if m.updateNoise
