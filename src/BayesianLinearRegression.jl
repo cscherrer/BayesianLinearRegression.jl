@@ -136,7 +136,14 @@ function BayesianLinReg(
     )
 end
 
-const normSquared = LinearAlgebra.norm_sqr
+function normSquared(v) 
+    s = 0.0 
+    @inbounds @simd for i ∈ eachindex(v) 
+        s += v[i]*v[i]
+    end 
+    return s 
+end
+    
 
 function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
     m.done && return nothing
