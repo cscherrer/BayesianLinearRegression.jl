@@ -11,12 +11,14 @@ include("callbacks.jl")
 export BayesianLinReg
 
 mutable struct BayesianLinReg{T}
-    XtX 
-    Xty 
-    yty 
-    N   
+    XtX :: SubArray{Float64,2,Array{Float64,2},Tuple{Array{Int64,1},Array{Int64,1}},false}
+    Xty :: SubArray{Float64,1,Array{Float64,1},Tuple{Array{Int64,1}},false}
+    yty :: Float64
+    N   :: Int
 
-    eig
+    Hinv:: SubArray{Float64,2,Array{Float64,2},Tuple{Array{Int64,1},Array{Int64,1}},false}
+
+    eig :: LinearAlgebra.Eigen{Float64,Float64,Array{Float64,2},Array{Float64,1}}
 
     priorPrecision :: T
     updatePrior :: Bool
@@ -65,9 +67,7 @@ end
 ###########################################################################################
 # Inverse Hessian
 
-export hessianinv
-
-function hessianinv(m::BayesianLinReg)
+function hessianinv!(m::BayesianLinReg)
     Λ = m.eig.values
     Q = m.eig.vectors
 
@@ -75,9 +75,11 @@ function hessianinv(m::BayesianLinReg)
     β = m.noisePrecision
 
     D = Diagonal(inv.(α .+ β .* Λ))
-    Hinv = Q * D * Q'
-    
+
+    Hinv = m.Hinv
+    Hinv .= @~ Q * D * Q'
     symmetric!(Hinv)
+
     return Hinv
 end
 
@@ -99,9 +101,9 @@ end
 
 function updateWeights!(m::BayesianLinReg)
     β = m.noisePrecision
-    Hinv = hessianinv(m)
+    Hinv = hessianinv!(m)
 
-    m.weights .= β .* (Hinv * m.Xty)
+    m.weights .= @~ β .* (Hinv * m.Xty)
     return m.weights
 end
 
@@ -114,12 +116,11 @@ function BayesianLinReg(
 
     (N, p) = size(X)
     
-    XtX = view(X' * X, 1:p, 1:p)
-    Xty = view(X' * y, 1:p)
+    XtX = X' * X
+    Xty = X' * y
     yty = normSquared(y)
 
     symmetric!(XtX)
-    XtX .= Symmetric(XtX)
     
     return BayesianLinReg(XtX, Xty, yty, N)
 end
@@ -134,23 +135,33 @@ function BayesianLinReg(
     eig = eigen(XtX)
 
     p = length(Xty)
+    ps = [1:p;]
+
+    XtX = view(XtX, ps, ps)
+    Xty = view(Xty, ps)
 
     Λ  = eig.values
+    Λ .= max.(Λ, 0.0)
     Q = eig.vectors
 
     α = 1.0
     β = 1.0
 
+    ps = [1:p;]
     D = Diagonal(inv.(α .+ β .* Λ))
+    
     Hinv = Q * D * Q'
+    symmetric!(Hinv)
+    Hinv = view(Hinv, ps, ps)
 
-    weights = view(β .* (Hinv * Xty), 1:p)
+    weights = view(β .* (Hinv * Xty), ps)
 
     BayesianLinReg(
         XtX
       , Xty
       , yty
       , N 
+      , Hinv 
       , eig
       , α 
       , updatePrior
@@ -173,7 +184,7 @@ function ssr(m)
     Xty = m.Xty
     yty = m.yty
     w = m.weights
-    return yty - 2 * w' * Xty + w' * XtX * w
+    return yty - 2 * mydot(w, Xty) + w' * XtX * w
 end    
 
 function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
@@ -278,7 +289,7 @@ end
 
 export posteriorVariance
 
-posteriorVariance(m::BayesianLinReg) = hessianinv(m)
+posteriorVariance(m::BayesianLinReg) = hessianinv!(m)
 
 export posteriorWeights
 
@@ -395,9 +406,11 @@ function update!(m)
     ps = m.active
     XtX = m.XtX = view(m.XtX.parent, ps, ps)
     Xty = m.Xty = view(m.Xty.parent, ps)
-    m.weights = view(m.weights.parent, ps)
+    weights = m.weights = view(m.weights.parent, ps)
+    Hinv = m.Hinv = view(m.Hinv.parent, ps, ps)
 
     m.eig = eigen(collect(m.XtX))
+    m.eig.values .= max.(m.eig.values, 0.0)
 
     α = m.priorPrecision = 1.0
     β = m.noisePrecision = 1.0
@@ -405,10 +418,10 @@ function update!(m)
     Q = m.eig.vectors
     Λ = m.eig.values
     D = Diagonal(inv.(α .+ β .* Λ))
-    Hinv = Q * D * Q'
+    Hinv .= @~ Q * D * Q'
 
-    m.weights .= β .* (Hinv * Xty)
-
+    m.weights .= @~ β .* (Hinv * Xty)
+    return m
 end
 
 end # module
