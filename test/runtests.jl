@@ -1,15 +1,28 @@
 using BayesianLinearRegression
 using Test
+using LinearAlgebra
 
-@testset "BayesianLinearRegression.jl" begin
-    (n,p) = (10,5)
-    X = randn(n,p) 
-    β = randn(p)
-    ε = randn(n)
-    y = X*β + ε
+const BLR = BayesianLinearRegression
+
+function runtests()
+    X = randn(100,30)
+    β = randn(30)
+    y = X * β .+ randn(100)
+
     m = BayesianLinReg(X,y)
     fit!(m)
-    
-    f(α,β,w) = BayesianLinearRegression._logEv(n, p, α, β, m.X, m.y, m.hessian, w)
-    f(α,β,m.weights)
+
+    @testset "log-determinant of Hessian" begin
+        @test BLR.logdetH(m) ≈ logdet(hessian(m))
+    end
+
+    @testset "Inverse Hessian" begin
+        @test m.Hinv * hessian(m) ≈ I
+    end
+
+    @testset "Sum of Squared Residuals" begin
+        @test BLR.ssr(m) ≈ BLR.normSquared(y - predict(m,X; uncertainty=false))
+    end
 end
+
+runtests()
