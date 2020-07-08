@@ -23,6 +23,15 @@ function runtests()
     @testset "Sum of Squared Residuals" begin
         @test BLR.ssr(m) ≈ BLR.normSquared(y - predict(m,X; uncertainty=false))
     end
+
+    # This comes from the equating γ = γ between the α and β updates
+    @testset "N invariant" begin
+        α = priorPrecision(m)
+        β = noisePrecision(m)
+        w² = BLR.normSquared(m.weights)
+        ssr = BLR.ssr(m)
+        @test α * w² + β * ssr ≈ m.N
+    end
 end
 
 runtests()
