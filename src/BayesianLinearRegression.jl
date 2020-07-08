@@ -203,12 +203,14 @@ function Base.iterate(m::BayesianLinReg{T}, iteration=1) where {T}
 
     w = m.weights
 
+    wᵀw = normSquared(w)
+    rᵀr = ssr(m)
     if m.updatePrior
-        m.priorPrecision = gamma(m) / normSquared(w)
+        m.priorPrecision = gamma(m) / wᵀw
     end
 
     if m.updateNoise
-        m.noisePrecision = (N - gamma(m)) / ssr(m)
+        m.noisePrecision = (N - gamma(m)) / rᵀr
     end
 
     updateWeights!(m)     
