@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl.svg?branch=master)](https://travis-ci.com/cscherrer/BayesianLinearRegression.jl)
 [![Codecov](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/cscherrer/BayesianLinearRegression.jl)
 
-This library implements Bayesian Linear Regression, as described in Chris Bishop's [Pattern Recognition and Machine Learning](https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf).
+This library implements Bayesian Linear Regression, as described in [Pattern Recognition and Machine Learning](https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf) by [Chris Bishop](https://www.microsoft.com/en-us/research/people/cmbishop/).
 
 The idea is that if the weights are given iid normal prior distributions and the noise of the response vector is known (also iid normal), the posterior can be found easily in closed form. This leaves the question of how these values should be determined, and Bishop's suggestion is to use [marginal likelihood](http://en.wikipedia.org/wiki/Marginal_likelihood). 
 
@@ -48,7 +48,7 @@ This package maximizes the marginal likelihood using the approach described in B
 
 For details, see
 
-Bishop, C. M. (2006). Pattern Recognition and Machine Learning (M. Jordan, J. Kleinberg, & B. Schölkopf (eds.); Vol. 53, Issue 9). Springer. https://doi.org/10.1117/1.2819119
+Bishop, C. M. (2006). [Pattern Recognition and Machine Learning](https://www.microsoft.com/en-us/research/people/cmbishop/prml-book/) (M. Jordan, J. Kleinberg, & B. Schölkopf (eds.); Vol. 53, Issue 9). Springer. Available online: https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf
 
 ## Example 
 
