@@ -328,7 +328,7 @@ end
 
 export predict
 
-function predict(m::BayesianLinReg, X; uncertainty=true, noise=true)
+function predict(m::BayesianLinReg, X; uncertainty=true, noise=false)
     noise &= uncertainty
     # dispatch to avoid type instability
     return _predict(m, X, Val(uncertainty), Val(noise))
