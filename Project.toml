@@ -1,19 +1,19 @@
 name = "BayesianLinearRegression"
 uuid = "5047281b-d44e-44a3-ad3e-58447b69b7ca"
 authors = ["Chad Scherrer"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
+AverageShiftedHistograms = "77b51b56-6f8f-5c3a-9cb4-d71f9594ea6e"
 LazyArrays = "5078a376-72f3-5289-bfd5-ec5146d43c02"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
-julia = "1.4"
-LazyArrays = "0.16"
+LazyArrays = "0.16, 0.17, 0.18, 0.19, 0.20, 0.21"
 Measurements = "2.0"
-
+julia = "1.4"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
